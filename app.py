@@ -44,7 +44,7 @@ st.title("🎭 《諸神黃昏：法蘭西的算法狂歡》")
 st.subheader("🌐 全網頁多人在線聯機互動先導版")
 st.markdown("---")
 
-col_room1, col_room2 = st.columns()
+col_room1, col_room2 = st.columns([1, 2])
 with col_room1:
     room_input = st.text_input("📡 輸入 4-6 位純數字房間號以接入信道 (或輸入後台暗號):", value="2026")
 
