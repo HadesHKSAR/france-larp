@@ -185,7 +185,7 @@ if room_input:
         with chat_col2:
             st.write("👁️ 你的專屬【深層黑幕數據庫】:")
             if st.button("🔥 破解個人隱私數據包"):
-                st.markdown(f"<div class='secret-box'>{CHARACTERS[my_name]['clue']}</div>", unsafe_with_html=False) # 特意不使用 HTML 渲染保障數據純淨
+                st.markdown(f"<div class='secret-box'>{CHARACTERS[my_name]['clue']}</div>", unsafe_allow_html=False) # 特意不使用 HTML 渲染保障數據純淨
 
         # STEP 3: 算力天平即時對賭（已完美整合每位角色的專屬資金/資源上限）
         st.markdown("---")
