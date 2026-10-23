@@ -188,6 +188,7 @@ if room_input:
                 st.markdown(f"<div class='secret-box'>{CHARACTERS[my_name]['clue']}</div>", unsafe_allow_html=False) # 特意不使用 HTML 渲染保障數據純淨
 
         # STEP 3: 算力天平即時對賭（已完美整合每位角色的專屬資金/資源上限）
+                # ==================== 🛠️ 以下為修正後的 STEP 3 按鈕邏輯 ====================
         st.markdown("---")
         st.header("⚖️ STEP 3: 歐盟算力天平（同房玩家即時同步影響）")
         
@@ -201,21 +202,29 @@ if room_input:
         st.markdown(f"📢 你的宿敵是：`{CHARACTERS[my_name]['target']}`")
         st.markdown(f"🏷️ 你調度的資源類型為：**{CHARACTERS[my_name]['resource_type']}**")
         
-        # 核心優化：將滑條的最大值 (max_value) 綁定為該角色的專屬上限！
         my_max = CHARACTERS[my_name]["max_resource"]
         my_bet = st.slider(f"選擇你要投入的資源點數 (受你個人資產上限限制：0 - {my_max}):", min_value=0, max_value=my_max, value=int(my_max/2))
         
-        col_bet1, col_bet2 = st.columns(2) #  已修正
+        col_bet1, col_bet2 = st.columns(2)
+        
+        # 🔒 漏洞修正 1：定義哪些角色屬於「資本陣營」，有權操控資本
+        is_capital_side = my_name in ["🟦 矽谷科技巨頭代表 (艾莉絲)", "🟪 奢侈品財閥千金 (克洛伊)", "🟩 法國本土 AI 天才 (馬克)"]
+        
         with col_bet1:
-            if st.button("🔺 注入【大資本 · 晶片算力】"):
+            # 如果不是資本陣營，這個按鈕會自動變成灰色禁用狀態 (disabled=True)
+            if st.button("🔺 注入【大資本 · 晶片算力】", disabled=not is_capital_side):
                 room["capital_power"] += my_bet
                 room["chat"].append({"user": "⚖️ 天平公告", "text": f"【{my_name}】動用了其資產上限內的 {my_bet} 點資本，向資本天平注資！"})
                 st.rerun()
+                
         with col_bet2:
-            if st.button("🔻 激活【底層庶民 · 街頭暴動】"):
+            # 🔒 漏洞修正 2：同理，只有平民/庶民陣營（非資本方）才能引爆街頭暴動
+            if st.button("🔻 激活【底層庶民 · 街頭暴動】", disabled=is_capital_side):
                 room["people_power"] += my_bet
                 room["chat"].append({"user": "⚖️ 天平公告", "text": f"【{my_name}】引爆了其能力上限內的 {my_bet} 點暴動能量，拉動庶民天平！"})
                 st.rerun()
+        # ==================== 🛠️ 以上為修正後的 STEP 3 按鈕邏輯 ====================
+
 
         # 卡點引流
         if c_power > 150 or p_power > 150:
