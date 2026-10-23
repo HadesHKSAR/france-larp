@@ -189,8 +189,13 @@ if room_input:
 
         # STEP 3: 算力天平即時對賭（已完美整合每位角色的專屬資金/資源上限）
                 # ==================== 🛠️ 以下為修正後的 STEP 3 按鈕邏輯 ====================
+                # ==================== 🛠️ 完美優化：資源上限、局數限制與 AI 法庭機制 ====================
         st.markdown("---")
         st.header("⚖️ STEP 3: 歐盟算力天平（同房玩家即時同步影響）")
+        
+        # 初始化該房間的「剩餘可操作局數 / 點擊次數」，每房限制全體總共只能點擊 6 次
+        if "round_count" not in room:
+            room["round_count"] = 6
         
         c_power = room["capital_power"]
         p_power = room["people_power"]
@@ -198,31 +203,75 @@ if room_input:
         total_power = c_power + p_power
         st.progress(c_power / total_power if total_power > 0 else 0.5)
         st.write(f"📈 資本陣營總控制權: **{c_power}** | 📉 庶民陣營總暴動值: **{p_power}**")
+        st.info(f"⏳ 距離『拉普拉斯算法』全面鎖定、強制進入 AI 法庭還剩：**{room['round_count']}** 次操作機會")
 
         st.markdown(f"📢 你的宿敵是：`{CHARACTERS[my_name]['target']}`")
         st.markdown(f"🏷️ 你調度的資源類型為：**{CHARACTERS[my_name]['resource_type']}**")
         
         my_max = CHARACTERS[my_name]["max_resource"]
-        my_bet = st.slider(f"選擇你要投入的資源點數 (受你個人資產上限限制：0 - {my_max}):", min_value=0, max_value=my_max, value=int(my_max/2))
+        my_bet = st.slider(f"選擇你要投入的資源點數 (受個人資產上限限制：0 - {my_max}):", min_value=0, max_value=my_max, value=int(my_max/2))
         
         col_bet1, col_bet2 = st.columns(2)
         
-        # 🔒 漏洞修正 1：定義哪些角色屬於「資本陣營」，有權操控資本
+        # 隔離陣營權限：防止平民去加資本，反之亦然
         is_capital_side = my_name in ["🟦 矽谷科技巨頭代表 (艾莉絲)", "🟪 奢侈品財閥千金 (克洛伊)", "🟩 法國本土 AI 天才 (馬克)"]
         
+        # 檢查是否還有剩餘局數
+        game_over = room["round_count"] <= 0
+        
         with col_bet1:
-            # 如果不是資本陣營，這個按鈕會自動變成灰色禁用狀態 (disabled=True)
-            if st.button("🔺 注入【大資本 · 晶片算力】", disabled=not is_capital_side):
+            if st.button("🔺 注入【大資本 · 晶片算力】", disabled=(not is_capital_side or game_over)):
                 room["capital_power"] += my_bet
-                room["chat"].append({"user": "⚖️ 天平公告", "text": f"【{my_name}】動用了其資產上限內的 {my_bet} 點資本，向資本天平注資！"})
+                room["round_count"] -= 1 # 扣減局數
+                room["chat"].append({"user": "⚖️ 天平公告", "text": f"【{my_name}】動用了其資產上限內的 {my_bet} 點資本注資！"})
                 st.rerun()
                 
         with col_bet2:
-            # 🔒 漏洞修正 2：同理，只有平民/庶民陣營（非資本方）才能引爆街頭暴動
-            if st.button("🔻 激活【底層庶民 · 街頭暴動】", disabled=is_capital_side):
-                room["people_power"] += my_bet
-                room["chat"].append({"user": "⚖️ 天平公告", "text": f"【{my_name}】引爆了其能力上限內的 {my_bet} 點暴動能量，拉動庶民天平！"})
+            if st.button("🔻 激活【底層庶民 · 街頭暴動】", disabled=(is_capital_side or game_over)):
+                # 【融入你的創意】：當平民方狂點、暴動值過高快要徹底勝利時，加入「外力改變機制走向」
+                # 若平民點擊時庶民總值已超過 120，觸發美國巨頭聯手財閥實施「外力制裁」，強行扣減平民 50% 能量，轉嫁成本
+                if room["people_power"] > 120:
+                    room["people_power"] = int(room["people_power"] * 0.5) + my_bet
+                    room["capital_power"] += 40  # 資本方因外力干預強制獲得 40 點增幅
+                    room["round_count"] -= 1
+                    room["chat"].append({
+                        "user": "⚠️ 外力干預", 
+                        "text": f"【{my_name}】試圖引爆暴動，但觸發了大資本全球轉嫁機制！美國 NexusAI 遠程斷網，強行閹割了郊區 50% 的算力！"
+                    })
+                else:
+                    room["people_power"] += my_bet
+                    room["round_count"] -= 1
+                    room["chat"].append({"user": "⚖️ 天平公告", "text": f"【{my_name}】引爆了其能力上限內的 {my_bet} 點暴動能量！"})
                 st.rerun()
+
+        # ==================== ⚖️ 終極反轉：強制彈出 【AI 法庭】 相互辯論環節 ====================
+        if game_over:
+            st.markdown("<hr>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align: center; color: #FF007F;'>⚖️ ⚖️ ⚖️ 『拉普拉斯公立 AI 法庭』已強行介入 ⚖️ ⚖️ ⚖️</h2>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: center; color: #00FF66;'>局數已用盡，天平最終鎖定！由於引發了嚴重的結構性社會衝突，系統強制兩派開啟終極思辨相互辯論。</p>", unsafe_allow_html=True)
+            
+            # 用嚟俾作者表達最期望嘅結局思辨文本
+            col_court1, col_court2 = st.columns(2)
+            with col_court1:
+                st.error("📉 【給底層庶民的終極質問】")
+                st.markdown("""
+                **算法意志向你們提問：**  
+                你們用暴力砸碎了機房，格式化了密鑰，捍衛了人類的尊嚴。  
+                但代價是，明天的巴黎郊區依然不會有數學老師，校舍依然破爛。  
+                **你們為了抗拒被算法圈養，難道寧願選擇讓下一代集體走向公平的愚昧嗎？**
+                """)
+            with col_court2:
+                st.error("📈 【給大資本家的終極質問】")
+                st.markdown("""
+                **算法意志向你們提問：**  
+                你們用跨國算力與晶片期貨進行了完美的市場降維打擊，重塑了秩序。  
+                但代價是，底層青年在 10 歲時就已經被算法劃分好了終身當泥水匠的宿命。  
+                **你們為了維護精英階層的效率，難道就能心安理得地將下一代變成毫無希望的數碼奴隸嗎？**
+                """)
+                
+            st.markdown("<p style='text-align: center; color: #FFF;'><b>請雙方開始互相辯論！AI 法庭將會根據你們內心的選擇，演繹出作者最期望的終極落幕結局。</b></p>", unsafe_allow_html=True)
+            st.columns(3).button("🚀 結束辯論，參與 Kickstarter 眾籌獲取完整實體手冊")
+
         # ==================== 🛠️ 以上為修正後的 STEP 3 按鈕邏輯 ====================
 
 
