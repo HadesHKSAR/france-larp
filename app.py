@@ -84,16 +84,30 @@ if room_input == "DM-999":
         target_room_id = st.selectbox("🎯 選擇要監控的玩家房間號:", list(GLOBAL_ROOMS.keys()))
         dm_room = GLOBAL_ROOMS[target_room_id]
         
-        col_dm1, col_dm2 = st.columns(2) #  已修正
+                # ==================== 🛠️ 這是優化後的 DM 聊天竊聽器區塊 ====================
+        col_dm1, col_dm2 = st.columns(2)
         with col_dm1:
             st.write("### 🕵️ 玩家實時聊天內容竊聽器:")
+            
+            # 顯示當前房間所有歷史訊息
             for msg in dm_room["chat"]:
-                st.markdown(f"<div class='chat-msg'><b>{msg['user']}:</b> {msg['text']}</div>", unsafe_allow_html=True) #  已修正
+                st.markdown(f"<div class='chat-msg'><b>{msg['user']}:</b> {msg['text']}</div>", unsafe_allow_html=True)
                 
+            # 🔥 新增核心改動：一鍵清除歷史記錄按鈕
+            if st.button("🔥 一鍵清除該房間所有通訊記錄"):
+                dm_room["chat"] = [] # 將聊天陣列直接清空
+                dm_room["chat"].append({"user": "🤖 系統提示", "text": "DM 已在後台物理清空了此房間的所有歷史通訊記錄，信道已重置。"})
+                st.success("該房間的通訊歷史已成功清空！")
+                time.sleep(0.5)
+                st.rerun() # 重新整理網頁
+                
+            st.markdown("<br>", unsafe_allow_html=True)
             dm_msg = st.text_input("✍️ 以【拉普拉斯神諭】身份向該房間發送廣播:")
             if st.button("⚡ 發送全知神諭") and dm_msg:
                 dm_room["chat"].append({"user": "👁️ 算法神諭", "text": dm_msg})
                 st.rerun()
+        # ==================== 🛠️ 這是優化後的 DM 聊天竊聽器區塊 ====================
+
                 
         with col_dm2:
             st.write("### 🎚️ 算力天平人工干預器:")
