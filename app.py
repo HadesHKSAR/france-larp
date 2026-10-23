@@ -51,7 +51,7 @@ with col_room1:
 # 4. 🎛️ 隱藏的 DM 上帝主控台面板
 if room_input == "DM-999":
     st.markdown("<div class='dm-box'>", unsafe_allow_html=True) #  此處已修正為 unsafe_allow_html
-    st.markdown("<h2>👁️ 『拉普拉斯算法』終極主控後台 (DM MODE)</h2>", unsafe_with_html=False)
+    st.markdown("<h2>👁️ 『拉普拉斯算法』終極主控後台 (DM MODE)</h2>", unsafe_allow_html=False)
     st.write("當前全網路活躍房間總數:", len(GLOBAL_ROOMS))
     
     if len(GLOBAL_ROOMS) == 0:
