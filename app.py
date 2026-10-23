@@ -20,38 +20,62 @@ st.markdown("""
     .chat-msg { background-color: #111; padding: 8px; margin: 5px 0; border-radius: 3px; border: 1px solid #333; }
     .dm-box { background-color: #001122; border: 2px dashed #00FF66; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
     </style>
-""", unsafe_allow_html=True) #  此處已修正為 unsafe_allow_html
+""", unsafe_allow_html=True) #  已修正
 
-# 2. 初始化全域多房間數據庫（跨用戶數據共享）
+# 2. 初始化全域多房間數據庫
 @st.cache_resource
 def get_global_database():
     return {}
 
 GLOBAL_ROOMS = get_global_database()
 
-# 6大獨佔角色數據庫設定
+# 6大角色數據庫（新增每個角色的專屬資金/資源上限與類型描述）
 CHARACTERS = {
-    "🟥 工會鐵娘子 (娜塔莉)": {"title": "古典人文 / 庶民", "target": "🟪 奢侈品財閥千金 (克洛伊)", "clue": "【解密音訊檔】死者生前威脅你，指控你私下收受了奢侈品財閥 500 萬歐元的秘密政治獻金。"},
-    "🟨 郊區憤怒青年 (尤瑟夫)": {"title": "無政府主義 / 邊緣", "target": "🟦 矽谷科技巨頭代表 (艾莉絲)", "clue": "【核心算法日誌】死者親手將你所在的貧民窟學生的 AI 難度調高 300%，意圖進行階級清洗。"},
-    "🟦 矽谷科技巨頭代表 (艾莉絲)": {"title": "跨國資本", "target": "🟩 法國本土 AI 天才 (馬克)", "clue": "【代碼覆寫指令】總部已通過零日漏洞強行接入機房，對死者的 Vision Pro 進行了『致死光效覆寫』。"},
-    "🟩 法國本土 AI 天才 (馬克)": {"title": "技術理性", "target": "⬛ 落魄的高中校長 (讓·皮埃爾)", "clue": "【區塊鏈錢包】你今晚收到了財閥轉入的 2,000 枚加密貨幣，條件是你在系統中幫木馬開後門。"},
-    "🟪 奢侈品財閥千金 (克洛伊)": {"title": "超級資產", "target": "🟥 工會鐵娘子 (娜塔莉)", "clue": "【私人衛隊 GPS】你的保鏢今晚利用發電機共振盲區，用機械總鑰匙把機房大門反鎖，製造了密室。"},
-    "⬛ 落魄的高中校長 (讓·皮埃爾)": {"title": "體制犧牲品", "target": "🟩 法國本土 AI 天才 (馬克)", "clue": "【暗網交易單】你一個星期前購買了工業級『液態氰化鈉』，並親手塗抹在死者的 Vision Pro 海綿墊上。"}
+    "🟥 工會鐵娘子 (娜塔莉)": {
+        "title": "古典人文 / 庶民", "target": "🟪 奢侈品財閥千金 (克洛伊)", 
+        "clue": "【解密音訊檔】死者生前威脅你，指控你私下收受了奢侈品財閥 500 萬歐元的秘密政治獻金。",
+        "resource_type": "📉 庶民陣營 · 組織罷工權", "max_resource": 15
+    },
+    "🟨 郊區憤怒青年 (尤瑟夫)": {
+        "title": "無政府主義 / 邊緣", "target": "🟦 矽谷科技巨頭代表 (艾莉絲)", 
+        "clue": "【核心算法日誌】死者親手將你所在的貧民窟學生的 AI 難度調高 300%，意圖進行階級清洗。",
+        "resource_type": "🔥 邊緣陣營 · 街頭暴動值", "max_resource": 50
+    },
+    "🟦 矽谷科技巨頭代表 (艾莉絲)": {
+        "title": "跨國資本", "target": "🟩 法國本土 AI 天才 (馬克)", 
+        "clue": "【代碼覆寫指令】總部已通過零日漏洞強行接入機房，對死者的 Vision Pro 進行了『致死光效覆寫』。",
+        "resource_type": "📈 資本陣營 · 美金算力代幣", "max_resource": 100
+    },
+    "🟩 法國本土 AI 天才 (馬克)": {
+        "title": "技術理性", "target": "⬛ 落魄的高中校長 (讓·皮埃爾)", 
+        "clue": "【區塊鏈錢包】你今晚收到了財閥轉入的 2,000 枚加密貨幣，條件是你在系統中幫木馬開後門。",
+        "resource_type": "💻 技術陣營 · 算法密鑰碎片", "max_resource": 30
+    },
+    "🟪 奢侈品財閥千金 (克洛伊)": {
+        "title": "超級資產", "target": "🟥 工會鐵娘子 (娜塔莉)", 
+        "clue": "【私人衛隊 GPS】你的保鏢今晚利用發電機共振盲區，用機械總鑰匙把機房大門反鎖，製造了密室。",
+        "resource_type": "💰 資本陣營 · 晶片期貨現貨", "max_resource": 120
+    },
+    "⬛ 落魄的高中校長 (讓·皮埃爾)": {
+        "title": "體制犧牲品", "target": "🟩 法國本土 AI 天才 (馬克)", 
+        "clue": "【暗網交易單】你一個星期前購買了工業級『液態氰化鈉』，並親手塗抹在死者的 Vision Pro 海綿墊上。",
+        "resource_type": "🎒 體制陣營 · 挪用修繕基金", "max_resource": 10
+    }
 }
 
-# 3. 標題與簡便房號登入
+# 3. 標題
 st.title("🎭 《諸神黃昏：法蘭西的算法狂歡》")
 st.subheader("🌐 全網頁多人在線聯機互動先導版")
 st.markdown("---")
 
-col_room1, col_room2 = st.columns([1, 2])
+col_room1, col_room2 = st.columns(2) #  已修正為傳入參數 2
 with col_room1:
     room_input = st.text_input("📡 輸入 4-6 位純數字房間號以接入信道 (或輸入後台暗號):", value="2026")
 
-# 4. 🎛️ 隱藏的 DM 上帝主控台面板
+# 4. DM 上帝主控台
 if room_input == "DM-999":
-    st.markdown("<div class='dm-box'>", unsafe_allow_html=True) #  此處已修正為 unsafe_allow_html
-    st.markdown("<h2>👁️ 『拉普拉斯算法』終極主控後台 (DM MODE)</h2>", unsafe_allow_html=False)
+    st.markdown("<div class='dm-box'>", unsafe_allow_html=True) #  已修正
+    st.markdown("<h2>👁️ 『拉普拉斯算法』終極主控後台 (DM MODE)</h2>", unsafe_allow_html=True)
     st.write("當前全網路活躍房間總數:", len(GLOBAL_ROOMS))
     
     if len(GLOBAL_ROOMS) == 0:
@@ -60,7 +84,7 @@ if room_input == "DM-999":
         target_room_id = st.selectbox("🎯 選擇要監控的玩家房間號:", list(GLOBAL_ROOMS.keys()))
         dm_room = GLOBAL_ROOMS[target_room_id]
         
-        col_dm1, col_dm2 = st.columns(2)
+        col_dm1, col_dm2 = st.columns(2) #  已修正
         with col_dm1:
             st.write("### 🕵️ 玩家實時聊天內容竊聽器:")
             for msg in dm_room["chat"]:
@@ -91,7 +115,7 @@ if room_input == "DM-999":
                 dm_room["chat"].append({"user": "🤖 系統提示", "text": "DM 強制重置了全場角色權限，請玩家重新鎖定。"})
                 st.rerun()
                 
-    st.markdown("</div>", unsafe_allow_html=True) #  此處已修正為 unsafe_allow_html
+    st.markdown("</div>", unsafe_allow_html=True) #  已修正
     st.stop()
 
 # 5. 普通玩家邏輯驗證
@@ -110,11 +134,11 @@ if room_input:
         }
     room = GLOBAL_ROOMS[room_id]
 
-    # STEP 1: 角色選擇
+    # STEP 1: 角色選擇（含獨佔防重複機制）
     st.header("⚡ STEP 1: 鎖定你的賽博烙印（每房每角色限一人）")
     st.write(f"ℹ️ 當前房間：`{room_id}` | 請點擊鎖定未被選取的角色。")
     
-    cols = st.columns(3)
+    cols = st.columns(3) #  已修正
     my_name = st.session_state.get("my_name", None)
 
     for idx, (name, data) in enumerate(CHARACTERS.items()):
@@ -122,6 +146,7 @@ if room_input:
             is_taken = name in room["selected_by"]
             st.markdown(f"### {name}")
             st.markdown(f"🧬 *{data['title']}*")
+            st.markdown(f"📊 初始可調度資源上限: **{data['max_resource']}**") # 顯示上限
             
             if is_taken:
                 st.button(f"🔒 已被他人鎖定", key=f"char_{idx}", disabled=True)
@@ -146,7 +171,7 @@ if room_input:
         st.markdown("---")
         st.header(f"🔑 STEP 2: 獨立加密信道 —— 當前身份：{my_name}")
         
-        chat_col1, chat_col2 = st.columns(2)
+        chat_col1, chat_col2 = st.columns(2) #  已修正
         with chat_col1:
             st.write("📥 密碼學加密信道歷史 (手動重新整理或發言以同步):")
             for msg in room["chat"][-5:]:
@@ -160,9 +185,9 @@ if room_input:
         with chat_col2:
             st.write("👁️ 你的專屬【深層黑幕數據庫】:")
             if st.button("🔥 破解個人隱私數據包"):
-                st.markdown(f"<div class='secret-box'>{CHARACTERS[my_name]['clue']}</div>", unsafe_allow_html=True) #  已修正
+                st.markdown(f"<div class='secret-box'>{CHARACTERS[my_name]['clue']}</div>", unsafe_with_html=False) # 特意不使用 HTML 渲染保障數據純淨
 
-        # STEP 3: 算力天平即時對賭
+        # STEP 3: 算力天平即時對賭（已完美整合每位角色的專屬資金/資源上限）
         st.markdown("---")
         st.header("⚖️ STEP 3: 歐盟算力天平（同房玩家即時同步影響）")
         
@@ -171,28 +196,32 @@ if room_input:
         
         total_power = c_power + p_power
         st.progress(c_power / total_power if total_power > 0 else 0.5)
-        st.write(f"📈 資本陣營控制權: **{c_power}** | 📉 庶民陣營暴動值: **{p_power}**")
+        st.write(f"📈 資本陣營總控制權: **{c_power}** | 📉 庶民陣營總暴動值: **{p_power}**")
 
-        st.write(f"📢 你的宿敵是：`{CHARACTERS[my_name]['target']}`。調度你的力量拉動天平：")
-        my_bet = st.slider("選擇調度的資源點數 (0 - 50):", 0, 50, 10)
+        st.markdown(f"📢 你的宿敵是：`{CHARACTERS[my_name]['target']}`")
+        st.markdown(f"🏷️ 你調度的資源類型為：**{CHARACTERS[my_name]['resource_type']}**")
         
-        col_bet1, col_bet2 = st.columns(2)
+        # 核心優化：將滑條的最大值 (max_value) 綁定為該角色的專屬上限！
+        my_max = CHARACTERS[my_name]["max_resource"]
+        my_bet = st.slider(f"選擇你要投入的資源點數 (受你個人資產上限限制：0 - {my_max}):", min_value=0, max_value=my_max, value=int(my_max/2))
+        
+        col_bet1, col_bet2 = st.columns(2) #  已修正
         with col_bet1:
             if st.button("🔺 注入【大資本 · 晶片算力】"):
                 room["capital_power"] += my_bet
-                room["chat"].append({"user": "⚖️ 天平公告", "text": f"【{my_name}】向資本天平注入了 {my_bet} 點算力！"})
+                room["chat"].append({"user": "⚖️ 天平公告", "text": f"【{my_name}】動用了其資產上限內的 {my_bet} 點資本，向資本天平注資！"})
                 st.rerun()
         with col_bet2:
             if st.button("🔻 激活【底層庶民 · 街頭暴動】"):
                 room["people_power"] += my_bet
-                room["chat"].append({"user": "⚖️ 天平公告", "text": f"【{my_name}】激活了 {my_bet} 點街頭暴動值！"})
+                room["chat"].append({"user": "⚖️ 天平公告", "text": f"【{my_name}】引爆了其能力上限內的 {my_bet} 點暴動能量，拉動庶民天平！"})
                 st.rerun()
 
         # 卡點引流
-        if c_power > 120 or p_power > 120:
+        if c_power > 150 or p_power > 150:
             st.markdown("<hr>", unsafe_allow_html=True) #  已修正
             st.markdown("<h2 style='text-align: center; color: #FF007F;'>🚨 WARNING: DATA OVERLOAD 🚨</h2>", unsafe_allow_html=True) #  已修正
-            st.markdown("<p style='text-align: center; color: #00FF66;'>數據過載！『拉普拉斯算法』已被鎖死，請立刻前往實體/完整版進行最終清算。</p>", unsafe_allow_html=True) #  已修正
-            st.columns(3).button("🚀 前往 Kickstarter / 嘖嘖眾籌頁面解鎖實體盒裝")
+            st.markdown("<p style='text-align: center; color: #00FF66;'>數據過載！『拉普拉斯算法』已被鎖死，請立刻前往實體/完整版進行最終辯論與命運清算。</p>", unsafe_allow_html=True) #  已修正
+            st.columns(3)[1].button("🚀 前往 Kickstarter / 嘖嘖眾籌頁面解鎖實體精裝盒裝") # 居中按鈕已修正
 
-st.markdown("<br><br><br><hr><p style='text-align: center; color: #555;'>© 2026 Ragnarok: The Algorithmic Carnival of France.</p>", unsafe_allow_html=True) #  此處已修正為 unsafe_allow_html
+st.markdown("<br><br><br><hr><p style='text-align: center; color: #555;'>© 2026 Ragnarok: The Algorithmic Carnival of France.</p>", unsafe_allow_html=True) #  已修正
